@@ -37,6 +37,17 @@
         {% block content %}{% endblock %}
     </main>
 
+    <footer class="app-footer">
+        <div class="app-footer-inner">
+            <p>BaluC Data Platform</p>
+            <p class="app-footer-links">
+                <a href="{{ url_for('home.index') }}">Home</a>
+                <a href="{{ url_for('upload.upload_csv') }}">Upload</a>
+                <a href="{{ url_for('inventory.show_inventory') }}">Inventory</a>
+            </p>
+        </div>
+    </footer>
+
     <script type="module" src="{{ url_for('static', filename='js/pages/basePage.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
