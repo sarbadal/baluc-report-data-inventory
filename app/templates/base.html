@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}BaluC{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ static_url_for('css/style.css') }}">
 </head>
 <body>
     <div id="global-upload-tracker" class="global-upload-tracker" style="display:none;">
@@ -48,7 +48,7 @@
         </div>
     </footer>
 
-    <script type="module" src="{{ url_for('static', filename='js/pages/basePage.js') }}"></script>
+    <script type="module" src="{{ static_url_for('js/pages/basePage.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

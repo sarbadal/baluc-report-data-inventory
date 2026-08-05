@@ -102,10 +102,7 @@ def _load_processing_category_configs() -> dict[str, dict]:
     return configs
 
 
-def validate_processing_category_configs(
-    upload_type_rules: dict[str, dict],
-    processing_category_configs: dict[str, dict],
-) -> None:
+def validate_processing_category_configs(upload_type_rules: dict[str, dict], processing_category_configs: dict[str, dict]) -> None:
     enabled_categories = list(upload_type_rules.keys())
     missing_categories = [
         category
@@ -153,11 +150,14 @@ def validate_processing_category_configs(
 
 
 class Config:
+    APP_ENV = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower()
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
     MAX_CONTENT_LENGTH = _resolve_max_content_length()
 
     STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "").strip()
+    STATIC_ASSET_BASE_URL = os.getenv("STATIC_ASSET_BASE_URL", "").strip().rstrip("/")
+    STATIC_GCS_PREFIX = os.getenv("STATIC_GCS_PREFIX", "static").strip("/")
     UPLOAD_BASE_PREFIX = os.getenv("UPLOAD_BASE_PREFIX", "").strip("/")
     UPLOAD_PROCESSOR_CLASSES = _parse_csv_env_list(
         os.getenv("UPLOAD_PROCESSOR_CLASSES", "split_daily"),
