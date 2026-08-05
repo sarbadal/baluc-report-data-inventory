@@ -40,11 +40,15 @@ body {
 }
 
 .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(4px);
     border-bottom: 1px solid var(--border);
 }
 
