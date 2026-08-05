@@ -1,0 +1,28 @@
+{
+  "split_date_column": "event_date",
+  "_comment_field_mapping": "Mapping direction is target_field -> source_csv_column",
+  "field_mapping": {
+    "tm_fiscal_year": "TM Fiscal Year",
+    "month": "Month",
+    "day_of_month": "Day of Month",
+    "event_date": "Date",
+    "region": "Region",
+    "area": "Area",
+    "division": "Division",
+    "state": "State",
+    "city": "City",
+    "zone": "Zone",
+    "ppl": "PPL",
+    "pl": "PL",
+    "color": "Color",
+    "lob": "LOB",
+    "source_pv": "Source(PV)",
+    "source": "Source",
+    "sales_stage": "Sales Stage",
+    "opportunity_id": "Opty Id",
+    "gf_opportunity_created": "# of GF Opty Created",
+    "yf_opportunity_created": "# of YF Opty Created",
+    "sale_closed_qty": "06 Sale Closed Qty",
+    "testdrives_done_source_of_contact": "# of TestDrives Done(Source of Contact)"
+  }
+}

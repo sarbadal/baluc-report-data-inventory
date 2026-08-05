@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}BaluC{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="global-upload-tracker" class="global-upload-tracker" style="display:none;">
+        <strong>Upload Job</strong>
+        <span id="global-upload-status">Checking status...</span>
+        <a href="{{ url_for('upload.upload_csv') }}">View details</a>
+        <button id="global-upload-cancel" type="button" class="secondary-button">Cancel</button>
+    </div>
+
+    <header class="app-header">
+        <h1>BaluC Data Platform</h1>
+        <nav>
+            <a href="{{ url_for('home.index') }}">Home</a>
+            <a href="{{ url_for('upload.upload_csv') }}">CSV Upload</a>
+            <a href="{{ url_for('inventory.show_inventory') }}">Inventory</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="alerts">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script type="module" src="{{ url_for('static', filename='js/pages/basePage.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

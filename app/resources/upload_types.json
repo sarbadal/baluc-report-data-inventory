@@ -1,0 +1,16 @@
+{
+  "contact": {
+    "match_patterns": [
+      "^contact_dump_\\d{8}\\.csv$",
+      "^contact_dump.*\\.csv$"
+    ],
+    "output_stem": "contact_dump"
+  },
+  "ev": {
+    "match_patterns": [
+      "^ev_dump_\\d{8}\\.csv$",
+      "^ev_dump.*\\.csv$"
+    ],
+    "output_stem": "ev_dump"
+  }
+}

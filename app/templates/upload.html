@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}CSV Upload - BaluC{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>CSV Upload Service</h2>
+    <p class="hint">Add one or more CSV files. Each file row can have its own category.</p>
+    <p class="hint">Configured processor pipeline: {{ configured_processors | join(' -> ') }}</p>
+    <p class="hint">Available processors: {% for item in processor_options %}{{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}. API: /upload/processors</p>
+
+    <form method="post" enctype="multipart/form-data" class="form-grid" id="bulk-upload-form">
+        <div id="upload-rows" class="upload-rows" data-row-count="{{ row_count }}">
+            {% for i in range(row_count) %}
+            <div class="upload-row">
+                <div>
+                    <label>CSV File</label>
+                    <input name="csv_files" type="file" accept=".csv">
+                </div>
+                <div>
+                    <label>File Category (optional)</label>
+                    <select name="categories">
+                        <option value="">Auto-detect</option>
+                        {% for category in categories %}
+                            <option value="{{ category }}" {% if selected_categories and selected_categories|length > i and selected_categories[i] == category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="inline-actions">
+            <button type="button" id="add-row">Add Another File</button>
+            <button type="submit" id="upload-submit">Upload Files</button>
+            <button type="button" id="cancel-upload" class="secondary-button" style="display:none;">Cancel Upload</button>
+        </div>
+    </form>
+
+    <div class="result-block" id="live-progress" style="display:none;">
+        <h3>Live Upload Progress</h3>
+        <p id="live-status" class="hint">Starting upload...</p>
+    </div>
+
+    <div class="result-block" id="upload-results-block" {% if not upload_results %}style="display:none;"{% endif %}>
+        <h3>Upload Results</h3>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Original File</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Stored Paths</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in upload_results %}
+                <tr>
+                    <td>{{ result.original_filename or '-' }}</td>
+                    <td>{{ result.category or '-' }}</td>
+                    <td>{{ 'Success' if result.success else 'Failed' }}</td>
+                    <td>
+                        <div class="progress-wrap">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ 100 if result.success else 0 }}%"></div>
+                            </div>
+                            <div class="progress-text">{{ '100%' if result.success else '0%' }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if result.uploaded_paths and result.uploaded_paths|length > 0 %}
+                            <div class="path-count">{{ result.uploaded_paths|length }} file(s)</div>
+                            <ul class="path-list">
+                                {% for path in result.uploaded_paths %}
+                                <li>{{ path }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            {{ result.destination_path or result.message }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<template id="upload-row-template">
+    <div class="upload-row">
+        <div>
+            <label>CSV File</label>
+            <input name="csv_files" type="file" accept=".csv">
+        </div>
+        <div>
+            <label>File Category (optional)</label>
+            <select name="categories">
+                <option value="">Auto-detect</option>
+                {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/pages/uploadPage.js') }}"></script>
+{% endblock %}

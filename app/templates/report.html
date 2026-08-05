@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory - BaluC{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Storage Inventory</h2>
+    <p class="hint">Snapshot generated at {{ storage_summary.generated_at }}</p>
+
+    {% if storage_summary.error %}
+    <div class="alert error">{{ storage_summary.error }}</div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <p class="stat-label">Total Files</p>
+            <p class="stat-value">{{ storage_summary.total_files }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">Categories</p>
+            <p class="stat-value">{{ storage_summary.total_categories }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">Total Size</p>
+            <p class="stat-value">{{ storage_summary.total_size_label }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">Last Upload</p>
+            <p class="stat-value stat-small">{{ storage_summary.last_uploaded_at }}</p>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h3>By Category</h3>
+    {% if storage_summary.categories %}
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>File Count</th>
+                <th>Total Size</th>
+                <th>Last Uploaded</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in storage_summary.categories %}
+            <tr>
+                <td>{{ category.category }}</td>
+                <td>{{ category.total_files }}</td>
+                <td>{{ category.total_size_label }}</td>
+                <td>{{ category.last_uploaded_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="hint">No files available in storage yet.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h3>Recent Uploads</h3>
+    {% if storage_summary.recent_files %}
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>Uploaded At</th>
+                <th>Category</th>
+                <th>Path</th>
+                <th>Size</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in storage_summary.recent_files %}
+            <tr>
+                <td>{{ row.uploaded_at }}</td>
+                <td>{{ row.category }}</td>
+                <td>{{ row.path }}</td>
+                <td>{{ row.size_label }}</td>
+                <td>
+                    <a
+                        class="button-link recent-download-link"
+                        href="{{ url_for('inventory.download_recent_file', path=row.path) }}"
+                        title="Download {{ row.path }}"
+                        aria-label="Download {{ row.path }}"
+                    >
+                        Download
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="hint">No recent uploads found.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

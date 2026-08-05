@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - BaluC{% endblock %}
+
+{% block content %}
+<section class="card home-hero">
+    <p class="home-kicker">Data Operations Hub</p>
+    <h2>Upload, Track, and Validate Daily CSV Flows</h2>
+    <p>
+        Use BaluC to process category-based CSV uploads, run configurable pipelines,
+        and monitor storage-ready outputs in one place.
+    </p>
+    <div class="home-cta-row">
+        <a class="button-link" href="{{ url_for('upload.upload_csv') }}">Start Upload</a>
+        <a class="button-link secondary-button" href="{{ url_for('inventory.show_inventory') }}">View Inventory</a>
+    </div>
+</section>
+
+<section class="card home-status-strip">
+    <h3>System Status</h3>
+    <div class="home-status-grid">
+        <div class="status-item">
+            <p class="status-label">Storage Backend</p>
+            <p class="status-value">
+                {{ storage_backend|upper }}
+                {% if storage_backend == 'gcs' and gcs_bucket %}
+                <span class="status-subtle">({{ gcs_bucket }})</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="status-item">
+            <p class="status-label">Configured Processors</p>
+            <div class="chip-row">
+                {% for processor in configured_processors %}
+                <span class="chip">{{ processor }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="status-item">
+            <p class="status-label">Active Upload Job</p>
+            <p id="home-upload-status" class="status-value">No active upload</p>
+        </div>
+    </div>
+</section>
+
+<section class="home-grid">
+    <article class="card home-feature-card">
+        <h3>Live Upload Monitoring</h3>
+        <p>
+            Track file-by-file progress in real time, including split outputs,
+            upload paths, and current processing step.
+        </p>
+    </article>
+
+    <article class="card home-feature-card">
+        <h3>Config-Driven Categories</h3>
+        <p>
+            Keep category logic in backend config with field mappings and date split rules
+            so onboarding new feeds stays simple and predictable.
+        </p>
+    </article>
+
+    <article class="card home-feature-card">
+        <h3>Storage Visibility</h3>
+        <p>
+            Review what was uploaded, latest activity times, and per-category file volume
+            directly from the Inventory page.
+        </p>
+    </article>
+</section>
+
+<section class="card home-workflow">
+    <h3>Recommended Workflow</h3>
+    <ol>
+        <li>Go to Upload and add one or more CSV files with categories.</li>
+        <li>Monitor live progress and cancel if needed.</li>
+        <li>Open Inventory to verify recent uploads and storage footprint.</li>
+        <li>Download specific recent files for downstream checks.</li>
+    </ol>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/pages/homePage.js') }}"></script>
+{% endblock %}
