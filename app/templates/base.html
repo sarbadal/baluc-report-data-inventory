@@ -4,6 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}BaluC{% endblock %}</title>
+    <script>
+        (function initTheme() {
+            const modeKey = "baluc-theme-mode";
+            const legacyKey = "baluc-theme";
+            const legacyTheme = localStorage.getItem(legacyKey);
+            let mode = localStorage.getItem(modeKey);
+            if (!mode && (legacyTheme === "light" || legacyTheme === "dark")) {
+                mode = legacyTheme;
+            }
+            if (!mode) {
+                mode = "auto";
+            }
+            const systemPrefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const theme = mode === "auto" ? (systemPrefersDark ? "dark" : "light") : mode;
+            document.documentElement.setAttribute("data-theme-mode", mode);
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="{{ static_url_for('favicon.svg') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url_for('favicon.ico') }}">
     <link rel="stylesheet" href="{{ static_url_for('css/style.css') }}">
@@ -22,6 +40,7 @@
             <a href="{{ url_for('home.index') }}">Home</a>
             <a href="{{ url_for('upload.upload_csv') }}">CSV Upload</a>
             <a href="{{ url_for('inventory.show_inventory') }}">Inventory</a>
+            <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Change color theme mode">Theme: Auto</button>
         </nav>
     </header>
 
@@ -47,6 +66,7 @@
                 <a href="{{ url_for('upload.upload_csv') }}">Upload</a>
                 <a href="{{ url_for('inventory.show_inventory') }}">Inventory</a>
             </p>
+            <p id="theme-mode-badge" class="theme-mode-badge">Mode: Auto</p>
         </div>
     </footer>
 
