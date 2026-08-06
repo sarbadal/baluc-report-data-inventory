@@ -1,0 +1,64 @@
+{
+  "split_date_column": "final_schedule_dt",
+  "_comment_field_mapping": "Mapping direction is target_field -> source_csv_column",
+  "field_mapping": {
+    "schedule_dt": "SCHDATE",
+    "final_schedule_dt": "FINALSCHDT",
+    "est_no": "EST_NO",
+    "client": "CLIENT",
+    "campaign": "CAMPAIGN",
+    "pr_name": "PR_NAME",
+    "bill_no": "BILL_NO",
+    "bill_dt": "BILL_DT",
+    "final_amt": "FINAL_AMT",
+    "fin_year": "FIN_YEAR",
+    "sch_month": "SCH_MONTH",
+    "pub_name": "PUB_NAME",
+    "gstin": "GSTIN"
+  },
+  "content_hints": {
+    "sample_size": 25,
+    "column_value_patterns": [
+      {
+        "column": "est_no",
+        "pattern": "^\\d{6}/\\d{2}-\\d{2}$",
+        "weight": 1.3
+      },
+      {
+        "column": "schedule_dt",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "weight": 1.2
+      },
+      {
+        "column": "final_schedule_dt",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "weight": 1.2
+      },
+      {
+        "column": "fin_year",
+        "pattern": "^\\d{4}-\\d{4}$",
+        "weight": 1.0
+      },
+      {
+        "column": "sch_month",
+        "pattern": "^\\d{1,2}$",
+        "weight": 0.8
+      },
+      {
+        "column": "bill_no",
+        "pattern": "^.+$",
+        "weight": 0.6
+      },
+      {
+        "column": "campaign",
+        "pattern": "^.+$",
+        "weight": 0.5
+      },
+      {
+        "column": "pub_name",
+        "pattern": "^.+$",
+        "weight": 0.5
+      }
+    ]
+  }
+}

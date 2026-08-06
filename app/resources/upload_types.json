@@ -12,5 +12,13 @@
       "^ev_dump.*\\.csv$"
     ],
     "output_stem": "ev_dump"
+  },
+  "print": {
+    "match_patterns": [
+      "^tml_print_dump.*\\.csv$",
+      "^tml_pring_dump.*\\.csv$",
+      "^print_dump.*\\.csv$"
+    ],
+    "output_stem": "print_dump"
   }
 }

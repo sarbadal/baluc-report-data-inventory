@@ -6,6 +6,7 @@ from app.config import Config, validate_processing_category_configs
 from app.routes.home import home_bp
 from app.routes.inventory import inventory_bp
 from app.routes.upload import upload_bp
+from app.services.category_detection import CategoryDetectionService
 from app.services.naming import FilenameConventionService
 from app.services.upload_jobs import UploadJobManager
 from app.services.upload_processors import build_upload_processors
@@ -27,6 +28,10 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         app.config["SECRET_KEY"] = "dev-secret-key"
 
     naming_service = FilenameConventionService(app.config["UPLOAD_TYPE_RULES"])
+    category_detection_service = CategoryDetectionService(
+        naming_service=naming_service,
+        processing_category_configs=app.config.get("PROCESSING_CATEGORY_CONFIGS", {}),
+    )
     storage_provider = build_storage_provider(app.config)
     upload_processors = build_upload_processors(
         processor_names=app.config.get("UPLOAD_PROCESSOR_CLASSES", ["split_daily"]),
@@ -34,6 +39,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     )
     upload_service = UploadService(
         naming_service=naming_service,
+        category_detection_service=category_detection_service,
         storage_provider=storage_provider,
         upload_base_prefix=app.config.get("UPLOAD_BASE_PREFIX", ""),
         upload_processors=upload_processors,
@@ -42,6 +48,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     report_service = ReportService(storage_provider=storage_provider)
 
     app.extensions["naming_service"] = naming_service
+    app.extensions["category_detection_service"] = category_detection_service
     app.extensions["storage_provider"] = storage_provider
     app.extensions["upload_service"] = upload_service
     app.extensions["upload_job_manager"] = UploadJobManager()

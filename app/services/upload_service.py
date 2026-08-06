@@ -8,6 +8,7 @@ from typing import Any, Callable
 import pandas as pd
 from werkzeug.datastructures import FileStorage
 
+from app.services.category_detection import CategoryDetectionService
 from app.services.naming import FilenameConventionService
 from app.services.upload_processors import UploadFrame, UploadProcessor
 from app.services.storage import StorageProvider
@@ -44,6 +45,7 @@ class UploadProcessorRequest:
 @dataclass
 class UploadService:
     naming_service: FilenameConventionService
+    category_detection_service: CategoryDetectionService
     storage_provider: StorageProvider
     upload_base_prefix: str = ""
     upload_processors: list[UploadProcessor] = field(default_factory=list)
@@ -112,7 +114,13 @@ class _UploadExecution:
         if filename_error is not None:
             return self._error_result(message=filename_error)
 
-        category_error, requires_category = self._resolve_category()
+        df, read_error = self._read_csv()
+        if read_error is not None:
+            return self._error_result(message=read_error)
+
+        assert df is not None
+
+        category_error, requires_category = self._resolve_category(df)
         if category_error is not None:
             return self._error_result(
                 message=category_error,
@@ -120,15 +128,6 @@ class _UploadExecution:
             )
 
         assert self.category is not None
-
-        df, read_error = self._read_csv()
-        if read_error is not None:
-            return self._error_result(
-                message=read_error,
-                category=self.category,
-            )
-
-        assert df is not None
 
         frames, process_error = self._process_frames(df=df)
         if process_error is not None:
@@ -175,13 +174,63 @@ class _UploadExecution:
             return "Only CSV files are supported."
         return None
 
-    def _resolve_category(self) -> tuple[str | None, bool]:
-        detected_category = self.service.naming_service.detect_category(self.filename)
+    def _resolve_category(self, df: pd.DataFrame) -> tuple[str | None, bool]:
         normalized_chosen = (self.request.chosen_category or "").strip() or None
+        if normalized_chosen and not self.service.naming_service.has_category(normalized_chosen):
+            return "Invalid file category selected.", True
+
+        filename_detected_category = self.service.naming_service.detect_category(self.filename)
+
+        if normalized_chosen:
+            if filename_detected_category and filename_detected_category != normalized_chosen:
+                return (
+                    f"Selected category '{normalized_chosen}' conflicts with filename convention "
+                    f"('{filename_detected_category}'). Please choose the correct category.",
+                    True,
+                )
+
+            category_scores: dict[str, float] = {}
+            for category in self.service.naming_service.categories():
+                score = self.service.category_detection_service.category_match_score(category, df)
+                if score is not None:
+                    category_scores[category] = score
+
+            selected_score = category_scores.get(normalized_chosen)
+            if selected_score is None:
+                return (
+                    f"Selected category '{normalized_chosen}' has no detection configuration. "
+                    "Please contact admin or choose another category.",
+                    True,
+                )
+
+            if selected_score < self.service.category_detection_service.min_confidence:
+                return (
+                    f"Selected category '{normalized_chosen}' does not match CSV content "
+                    f"(match score {selected_score:.2f}). Please choose the correct category.",
+                    True,
+                )
+
+            best_category = max(category_scores, key=category_scores.get)
+            best_score = category_scores[best_category]
+            if best_category != normalized_chosen and best_score > selected_score:
+                return (
+                    f"Selected category '{normalized_chosen}' does not match CSV content. "
+                    f"Best detected category is '{best_category}' (score {best_score:.2f} vs {selected_score:.2f}).",
+                    True,
+                )
+
+            self.category = normalized_chosen
+            return None, False
+
+        detected = self.service.category_detection_service.detect_category(
+            filename=self.filename,
+            df=df,
+        )
+        detected_category = detected.category if detected is not None else None
 
         if not detected_category and not normalized_chosen:
             return (
-                "Filename does not match existing conventions. Please select a file category.",
+                "Unable to auto-detect file category from filename/CSV fields. Please select a file category.",
                 True,
             )
 
