@@ -29,6 +29,7 @@ class UploadJobManager:
         self,
         files: list[FileStorage],
         categories: list[str],
+        file_types: list[str],
         upload_service: UploadService,
     ) -> str:
         job_id = datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -51,7 +52,7 @@ class UploadJobManager:
 
         worker = threading.Thread(
             target=self._run_job,
-            args=(job_id, prepared_files, categories, upload_service),
+            args=(job_id, prepared_files, categories, file_types, upload_service),
             daemon=True,
         )
         worker.start()
@@ -114,6 +115,7 @@ class UploadJobManager:
         job_id: str,
         prepared_files: list[dict[str, str]],
         categories: list[str],
+        file_types: list[str],
         upload_service: UploadService,
     ) -> None:
         self._set_job_state(job_id, status="running", current_step="Processing files")
@@ -123,6 +125,7 @@ class UploadJobManager:
                 self._raise_if_cancel_requested(job_id)
                 chosen_category = categories[idx] if idx < len(categories) else ""
                 normalized_category = chosen_category.strip() or None
+                chosen_file_type = file_types[idx] if idx < len(file_types) else "fact"
                 self._set_job_state(
                     job_id,
                     current_file=item["filename"],
@@ -139,6 +142,7 @@ class UploadJobManager:
                         UploadRequest(
                             file=file,
                             chosen_category=normalized_category,
+                            file_type=chosen_file_type,
                             progress_callback=lambda event: self._on_progress(job_id, event),
                         )
                     )

@@ -11,6 +11,7 @@ class FileTypeRule:
     category: str
     match_patterns: tuple[str, ...]
     output_stem: str
+    default_file_type: str
 
 
 class FilenameConventionService:
@@ -19,10 +20,15 @@ class FilenameConventionService:
         self._compiled_patterns: Dict[str, tuple[re.Pattern[str], ...]] = {}
 
         for category, definition in raw_rules.items():
+            default_file_type = str(definition.get("default_file_type", "fact")).strip().lower()
+            if default_file_type not in {"fact", "dim"}:
+                default_file_type = "fact"
+
             rule = FileTypeRule(
                 category=category,
                 match_patterns=tuple(definition.get("match_patterns", [])),
                 output_stem=definition["output_stem"],
+                default_file_type=default_file_type,
             )
             self._rules[category] = rule
             self._compiled_patterns[category] = tuple(
@@ -47,3 +53,15 @@ class FilenameConventionService:
 
         stem = self._rules[category].output_stem
         return f"{stem}_{when.strftime('%Y%m%d')}.csv"
+
+    def default_file_type_for_category(self, category: str) -> str:
+        rule = self._rules.get(category)
+        if rule is None:
+            return "fact"
+        return rule.default_file_type
+
+    def category_default_file_types(self) -> dict[str, str]:
+        return {
+            category: rule.default_file_type
+            for category, rule in self._rules.items()
+        }

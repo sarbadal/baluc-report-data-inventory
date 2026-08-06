@@ -9,7 +9,13 @@
     <p class="hint">Configured processor pipeline: {{ configured_processors | join(' -> ') }}</p>
     <p class="hint">Available processors: {% for item in processor_options %}{{ item.name }}{% if not loop.last %}, {% endif %}{% endfor %}. API: /upload/processors</p>
 
-    <form method="post" enctype="multipart/form-data" class="form-grid" id="bulk-upload-form">
+    <form
+        method="post"
+        enctype="multipart/form-data"
+        class="form-grid"
+        id="bulk-upload-form"
+        data-category-default-file-types='{{ category_default_file_types | tojson }}'
+    >
         <div id="upload-rows" class="upload-rows" data-row-count="{{ row_count }}">
             {% for i in range(row_count) %}
             <div class="upload-row">
@@ -19,11 +25,18 @@
                 </div>
                 <div>
                     <label>File Category (optional)</label>
-                    <select name="categories">
+                    <select name="categories" class="category-select">
                         <option value="">Auto-detect</option>
                         {% for category in categories %}
                             <option value="{{ category }}" {% if selected_categories and selected_categories|length > i and selected_categories[i] == category %}selected{% endif %}>{{ category }}</option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="upload-file-type-field">
+                    <label>File Type</label>
+                    <select name="file_types" class="file-type-select">
+                        <option value="fact" {% if not selected_file_types or selected_file_types|length <= i or selected_file_types[i] == 'fact' %}selected{% endif %}>fact</option>
+                        <option value="dim" {% if selected_file_types and selected_file_types|length > i and selected_file_types[i] == 'dim' %}selected{% endif %}>dim</option>
                     </select>
                 </div>
             </div>
@@ -49,6 +62,7 @@
                 <tr>
                     <th>Original File</th>
                     <th>Category</th>
+                    <th>File Type</th>
                     <th>Status</th>
                     <th>Progress</th>
                     <th>Stored Paths</th>
@@ -59,6 +73,7 @@
                 <tr>
                     <td>{{ result.original_filename or '-' }}</td>
                     <td>{{ result.category or '-' }}</td>
+                    <td>{{ result.file_type or 'fact' }}</td>
                     <td>{{ 'Success' if result.success else 'Failed' }}</td>
                     <td>
                         <div class="progress-wrap">
@@ -95,11 +110,18 @@
         </div>
         <div>
             <label>File Category (optional)</label>
-            <select name="categories">
+            <select name="categories" class="category-select">
                 <option value="">Auto-detect</option>
                 {% for category in categories %}
                     <option value="{{ category }}">{{ category }}</option>
                 {% endfor %}
+            </select>
+        </div>
+        <div class="upload-file-type-field">
+            <label>File Type</label>
+            <select name="file_types" class="file-type-select">
+                <option value="fact" selected>fact</option>
+                <option value="dim">dim</option>
             </select>
         </div>
     </div>

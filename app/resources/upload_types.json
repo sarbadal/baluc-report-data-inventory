@@ -4,14 +4,16 @@
       "^contact_dump_\\d{8}\\.csv$",
       "^contact_dump.*\\.csv$"
     ],
-    "output_stem": "contact_dump"
+    "output_stem": "contact_dump",
+    "default_file_type": "fact"
   },
   "ev": {
     "match_patterns": [
       "^ev_dump_\\d{8}\\.csv$",
       "^ev_dump.*\\.csv$"
     ],
-    "output_stem": "ev_dump"
+    "output_stem": "ev_dump",
+    "default_file_type": "fact"
   },
   "print": {
     "match_patterns": [
@@ -19,6 +21,7 @@
       "^tml_pring_dump.*\\.csv$",
       "^print_dump.*\\.csv$"
     ],
-    "output_stem": "print_dump"
+    "output_stem": "print_dump",
+    "default_file_type": "fact"
   }
 }

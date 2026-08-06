@@ -12,13 +12,16 @@ upload_bp = Blueprint("upload", __name__, url_prefix="/upload")
 @upload_bp.route("", methods=["GET", "POST"])
 def upload_csv():
     upload_service: UploadService = current_app.extensions["upload_service"]
-    categories = list(current_app.extensions["naming_service"].categories())
+    naming_service = current_app.extensions["naming_service"]
+    categories = list(naming_service.categories())
+    category_default_file_types = naming_service.category_default_file_types()
     configured_processors = current_app.config.get("UPLOAD_PROCESSOR_CLASSES", ["split_daily"])
     processor_options = list_upload_processors()
 
     if request.method == "POST":
         files = [file for file in request.files.getlist("csv_files") if (file.filename or "").strip()]
         selected_categories = request.form.getlist("categories")
+        selected_file_types = request.form.getlist("file_types")
 
         if not files:
             flash("Please select at least one CSV file.", "error")
@@ -28,11 +31,17 @@ def upload_csv():
                 upload_results=[],
                 row_count=max(1, len(selected_categories)),
                 selected_categories=selected_categories,
+                selected_file_types=selected_file_types,
+                category_default_file_types=category_default_file_types,
                 configured_processors=configured_processors,
                 processor_options=processor_options,
             )
 
-        results = upload_service.handle_bulk_upload(files=files, chosen_categories=selected_categories)
+        results = upload_service.handle_bulk_upload(
+            files=files,
+            chosen_categories=selected_categories,
+            file_types=selected_file_types,
+        )
         success_count = sum(1 for result in results if result.success)
         failure_count = len(results) - success_count
 
@@ -51,6 +60,8 @@ def upload_csv():
             upload_results=results,
             row_count=max(1, len(files)),
             selected_categories=selected_categories,
+            selected_file_types=selected_file_types,
+            category_default_file_types=category_default_file_types,
             configured_processors=configured_processors,
             processor_options=processor_options,
         )
@@ -61,6 +72,8 @@ def upload_csv():
         upload_results=[],
         row_count=1,
         selected_categories=[""],
+        selected_file_types=["fact"],
+        category_default_file_types=category_default_file_types,
         configured_processors=configured_processors,
         processor_options=processor_options,
     )
@@ -73,12 +86,14 @@ def start_upload_job():
 
     files = [file for file in request.files.getlist("csv_files") if (file.filename or "").strip()]
     selected_categories = request.form.getlist("categories")
+    selected_file_types = request.form.getlist("file_types")
     if not files:
         return jsonify({"error": "Please select at least one CSV file."}), 400
 
     job_id = upload_job_manager.start_job(
         files=files,
         categories=selected_categories,
+        file_types=selected_file_types,
         upload_service=upload_service,
     )
     return jsonify({"job_id": job_id}), 202

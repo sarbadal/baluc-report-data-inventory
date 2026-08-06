@@ -22,6 +22,7 @@ class UploadResult:
     message: str
     original_filename: str
     category: str | None = None
+    file_type: str = "fact"
     destination_path: str | None = None
     storage_uri: str | None = None
     uploaded_paths: list[str] | None = None
@@ -32,6 +33,7 @@ class UploadResult:
 class UploadRequest:
     file: FileStorage
     chosen_category: str | None = None
+    file_type: str | None = None
     progress_callback: Callable[[dict[str, Any]], None] | None = None
 
 
@@ -39,6 +41,7 @@ class UploadRequest:
 class UploadProcessorRequest:
     df: pd.DataFrame
     category: str
+    file_type: str
     original_filename: str
 
 
@@ -60,16 +63,28 @@ class UploadService:
         )
         return executor.run()
 
-    def handle_bulk_upload(self, files: list[FileStorage], chosen_categories: list[str]) -> list[UploadResult]:
+    def handle_bulk_upload(
+        self,
+        files: list[FileStorage],
+        chosen_categories: list[str],
+        file_types: list[str],
+    ) -> list[UploadResult]:
         results: list[UploadResult] = []
 
         for idx, file in enumerate(files):
             chosen_category = chosen_categories[idx] if idx < len(chosen_categories) else ""
             normalized_category = chosen_category.strip() or None
+            chosen_file_type = file_types[idx] if idx < len(file_types) else "fact"
+            normalized_file_type = self._normalize_file_type(chosen_file_type)
+            if normalized_file_type is None and normalized_category:
+                normalized_file_type = self.naming_service.default_file_type_for_category(normalized_category)
+            if normalized_file_type is None:
+                normalized_file_type = "fact"
             result = self.handle_upload(
                 UploadRequest(
                     file=file,
                     chosen_category=normalized_category,
+                    file_type=normalized_file_type,
                 )
             )
             results.append(result)
@@ -86,6 +101,9 @@ class UploadService:
     def _run_upload_processors(self, request: UploadProcessorRequest) -> list[UploadFrame]:
         frames = [UploadFrame(df=request.df, file_date=date.today())]
 
+        if request.file_type == "dim":
+            return frames
+
         for processor in self.upload_processors:
             next_frames: list[UploadFrame] = []
             for frame in frames:
@@ -99,6 +117,15 @@ class UploadService:
 
         return frames
 
+    @staticmethod
+    def _normalize_file_type(raw_file_type: str | None) -> str | None:
+        normalized = str(raw_file_type or "").strip().lower()
+        if not normalized:
+            return None
+        if normalized not in {"fact", "dim"}:
+            return None
+        return normalized
+
 
 @dataclass
 class _UploadExecution:
@@ -106,9 +133,11 @@ class _UploadExecution:
     request: UploadRequest
     filename: str = ""
     category: str | None = None
+    file_type: str = "fact"
 
     def run(self) -> UploadResult:
         self.filename = (self.request.file.filename or "").strip()
+        self.file_type = self.service._normalize_file_type(self.request.file_type) or ""
 
         filename_error = self._validate_filename()
         if filename_error is not None:
@@ -128,6 +157,10 @@ class _UploadExecution:
             )
 
         assert self.category is not None
+        if not self.file_type:
+            self.file_type = self.service.naming_service.default_file_type_for_category(self.category)
+        if self.file_type not in {"fact", "dim"}:
+            self.file_type = "fact"
 
         frames, process_error = self._process_frames(df=df)
         if process_error is not None:
@@ -161,6 +194,7 @@ class _UploadExecution:
             ),
             original_filename=self.filename,
             category=self.category,
+            file_type=self.file_type,
             destination_path=uploaded_paths[0] if uploaded_paths else None,
             storage_uri=uploaded_uris[0] if uploaded_uris else None,
             uploaded_paths=uploaded_paths,
@@ -254,6 +288,7 @@ class _UploadExecution:
                 UploadProcessorRequest(
                     df=df,
                     category=self.category,
+                    file_type=self.file_type,
                     original_filename=self.filename,
                 )
             ), None
@@ -319,4 +354,5 @@ class _UploadExecution:
             message=message,
             original_filename=self.filename,
             category=category,
+            file_type=self.file_type,
         )

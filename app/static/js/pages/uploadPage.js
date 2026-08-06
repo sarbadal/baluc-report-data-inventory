@@ -12,7 +12,16 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
     const liveStatus = document.getElementById("live-status");
     const resultsBlock = document.getElementById("upload-results-block");
     const tableBody = document.querySelector(".results-table tbody");
+    const categoryDefaultRaw = uploadForm.dataset.categoryDefaultFileTypes || "{}";
+    let categoryDefaultFileTypes = {};
     let pollHandle = null;
+
+    try {
+        categoryDefaultFileTypes = JSON.parse(categoryDefaultRaw);
+    } catch (error) {
+        console.warn("Unable to parse category default file types", error);
+        categoryDefaultFileTypes = {};
+    }
 
     if (
         !addRowButton ||
@@ -29,9 +38,57 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
         return;
     }
 
+    const applyCategoryDefaultType = function (row, force) {
+        const categorySelect = row.querySelector('select[name="categories"]');
+        const fileTypeSelect = row.querySelector('select[name="file_types"]');
+        if (!categorySelect || !fileTypeSelect) {
+            return;
+        }
+
+        const category = (categorySelect.value || "").trim();
+        const defaultType = categoryDefaultFileTypes[category] || "fact";
+        const hasManualOverride = fileTypeSelect.dataset.userOverride === "true";
+
+        if (force || !hasManualOverride) {
+            fileTypeSelect.value = defaultType;
+            fileTypeSelect.dataset.autoValue = defaultType;
+            fileTypeSelect.dataset.userOverride = "false";
+        }
+    };
+
+    const attachRowBehavior = function (row) {
+        const categorySelect = row.querySelector('select[name="categories"]');
+        const fileTypeSelect = row.querySelector('select[name="file_types"]');
+        if (!categorySelect || !fileTypeSelect) {
+            return;
+        }
+
+        fileTypeSelect.dataset.autoValue = fileTypeSelect.value || "fact";
+        fileTypeSelect.dataset.userOverride = "false";
+
+        categorySelect.addEventListener("change", function () {
+            applyCategoryDefaultType(row, false);
+        });
+
+        fileTypeSelect.addEventListener("change", function () {
+            const autoValue = fileTypeSelect.dataset.autoValue || "fact";
+            fileTypeSelect.dataset.userOverride = fileTypeSelect.value !== autoValue ? "true" : "false";
+        });
+
+        applyCategoryDefaultType(row, false);
+    };
+
+    rowsContainer.querySelectorAll(".upload-row").forEach(function (row) {
+        attachRowBehavior(row);
+    });
+
     addRowButton.addEventListener("click", function () {
         const clone = template.content.cloneNode(true);
         rowsContainer.appendChild(clone);
+        const newRow = rowsContainer.lastElementChild;
+        if (newRow) {
+            attachRowBehavior(newRow);
+        }
     });
 
     const renderRow = function (result) {
@@ -42,6 +99,9 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
 
         const categoryCell = document.createElement("td");
         categoryCell.textContent = result.category || "-";
+
+        const fileTypeCell = document.createElement("td");
+        fileTypeCell.textContent = result.file_type || "fact";
 
         const statusCell = document.createElement("td");
         if (result.is_active) {
@@ -105,6 +165,7 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
 
         row.appendChild(fileCell);
         row.appendChild(categoryCell);
+        row.appendChild(fileTypeCell);
         row.appendChild(statusCell);
         row.appendChild(progressCell);
         row.appendChild(pathCell);
