@@ -23,5 +23,13 @@
     ],
     "output_stem": "print_dump",
     "default_file_type": "fact"
+  },
+  "mapping": {
+    "match_patterns": [
+      "^mapping_dump.*\\.csv$",
+      ".*mapping.*\\.csv$"
+    ],
+    "output_stem": "mapping_dump",
+    "default_file_type": "dim"
   }
 }

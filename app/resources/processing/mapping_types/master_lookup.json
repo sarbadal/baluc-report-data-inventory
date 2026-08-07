@@ -1,0 +1,9 @@
+{
+  "mapping_type": "master_lookup",
+  "match_patterns": [
+    "^master_dim_mapping_sample\\.csv$",
+    "^mapping_dump_template\\.csv$",
+    "^master.*mapping.*\\.csv$"
+  ],
+  "output_filename": "mapping_master.csv"
+}

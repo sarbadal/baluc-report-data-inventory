@@ -1,0 +1,8 @@
+{
+  "mapping_type": "ev_lookup",
+  "match_patterns": [
+    "^ev_dim_mapping_sample\\.csv$",
+    "^ev.*mapping.*\\.csv$"
+  ],
+  "output_filename": "mapping_ev_lookup.csv"
+}

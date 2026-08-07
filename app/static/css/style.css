@@ -506,12 +506,24 @@ button.theme-toggle {
     border-collapse: collapse;
 }
 
+#upload-results-block {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#upload-results-block .results-table {
+    table-layout: fixed;
+}
+
 .results-table th,
 .results-table td {
     border: 1px solid var(--border);
     padding: 0.5rem;
     text-align: left;
     font-size: 0.9rem;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .results-table th {
@@ -682,8 +694,13 @@ body.col-resize-active {
     line-height: 1.35;
 }
 
+#upload-results-block .path-list li {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .progress-wrap {
-    min-width: 130px;
+    min-width: 0;
 }
 
 .progress-bar {

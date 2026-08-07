@@ -30,6 +30,30 @@ class UploadProcessorSpec:
     factory: ProcessorFactory
 
 
+@dataclass(frozen=True)
+class FieldMappingKeyColumnFilter(UploadProcessor):
+    category_configs: dict[str, dict[str, Any]]
+
+    def process(self, frame: UploadFrame, *, category: str, original_filename: str) -> list[UploadFrame]:
+        del original_filename
+        category_config = self.category_configs.get(category, {})
+        field_mapping = category_config.get("field_mapping", {})
+        if not isinstance(field_mapping, dict) or not field_mapping:
+            return [frame]
+
+        configured_columns = [
+            key.strip()
+            for key in field_mapping.keys()
+            if isinstance(key, str) and key.strip()
+        ]
+        if not configured_columns:
+            return [frame]
+
+        columns_to_keep = [column for column in configured_columns if column in frame.df.columns]
+        filtered_df = frame.df.loc[:, columns_to_keep].copy()
+        return [UploadFrame(df=filtered_df, file_date=frame.file_date)]
+
+
 @dataclass
 class RenameFieldsUploadProcessor(UploadProcessor):
     category_configs: dict[str, dict[str, Any]]
@@ -104,11 +128,7 @@ class SplitDailyUploadProcessor(UploadProcessor):
         return output_frames
 
     @staticmethod
-    def _resolve_split_date_column(
-        df: pd.DataFrame,
-        split_date_column: str,
-        category_config: dict[str, Any],
-    ) -> str:
+    def _resolve_split_date_column(df: pd.DataFrame, split_date_column: str, category_config: dict[str, Any]) -> str:
         if split_date_column in df.columns:
             return split_date_column
 
@@ -143,6 +163,10 @@ def _build_rename_fields_processor(category_configs: dict[str, dict[str, Any]]) 
     return RenameFieldsUploadProcessor(category_configs=category_configs)
 
 
+def _build_field_mapping_key_column_filter_processor(category_configs: dict[str, dict[str, Any]]) -> UploadProcessor:
+    return FieldMappingKeyColumnFilter(category_configs=category_configs)
+
+
 def _build_split_daily_processor(category_configs: dict[str, dict[str, Any]]) -> UploadProcessor:
     return SplitDailyUploadProcessor(category_configs=category_configs)
 
@@ -157,6 +181,11 @@ UPLOAD_PROCESSOR_REGISTRY: dict[str, UploadProcessorSpec] = {
         name="rename_fields",
         description="Renames columns using field_mapping from category JSON config.",
         factory=_build_rename_fields_processor,
+    ),
+    "keep_config_columns": UploadProcessorSpec(
+        name="keep_config_columns",
+        description="Keeps only columns listed in field_mapping keys from category JSON config.",
+        factory=_build_field_mapping_key_column_filter_processor,
     ),
     "split_daily": UploadProcessorSpec(
         name="split_daily",
@@ -184,10 +213,7 @@ def list_upload_processors() -> list[dict[str, str]]:
     ]
 
 
-def build_upload_processors(
-    processor_names: list[str],
-    category_configs: dict[str, dict[str, Any]],
-) -> list[UploadProcessor]:
+def build_upload_processors(processor_names: list[str], category_configs: dict[str, dict[str, Any]]) -> list[UploadProcessor]:
     if not processor_names:
         processor_names = ["split_daily"]
 

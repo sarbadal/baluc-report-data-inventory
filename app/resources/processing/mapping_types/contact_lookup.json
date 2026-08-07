@@ -1,0 +1,8 @@
+{
+  "mapping_type": "contact_lookup",
+  "match_patterns": [
+    "^contact_dim_mapping_sample\\.csv$",
+    "^contact.*mapping.*\\.csv$"
+  ],
+  "output_filename": "mapping_contact_lookup.csv"
+}

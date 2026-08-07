@@ -102,6 +102,26 @@ def _load_processing_category_configs() -> dict[str, dict]:
     return configs
 
 
+def _load_mapping_storage_rule_configs() -> list[dict]:
+    default_dir = Path(__file__).resolve().parent / "resources" / "processing" / "mapping_types"
+    config_dir = Path(os.getenv("MAPPING_STORAGE_RULES_DIR", str(default_dir)))
+    rules: list[dict] = []
+
+    if not config_dir.exists() or not config_dir.is_dir():
+        return rules
+
+    for item in sorted(config_dir.glob("*.json")):
+        try:
+            parsed = json.loads(item.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict):
+            parsed.setdefault("_rule_file", item.name)
+            rules.append(parsed)
+
+    return rules
+
+
 def validate_processing_category_configs(upload_type_rules: dict[str, dict], processing_category_configs: dict[str, dict]) -> None:
     enabled_categories = list(upload_type_rules.keys())
     missing_categories = [
@@ -123,9 +143,14 @@ def validate_processing_category_configs(upload_type_rules: dict[str, dict], pro
             errors.append(f"{category}: config must be a JSON object")
             continue
 
-        split_date_column = config.get("split_date_column")
-        if not isinstance(split_date_column, str) or not split_date_column.strip():
-            errors.append(f"{category}: split_date_column must be a non-empty string")
+        category_rule = upload_type_rules.get(category, {})
+        default_file_type = str(category_rule.get("default_file_type", "fact")).strip().lower()
+        requires_split_date_column = default_file_type != "dim"
+
+        if requires_split_date_column:
+            split_date_column = config.get("split_date_column")
+            if not isinstance(split_date_column, str) or not split_date_column.strip():
+                errors.append(f"{category}: split_date_column must be a non-empty string")
 
         field_mapping = config.get("field_mapping")
         if not isinstance(field_mapping, dict) or not field_mapping:
@@ -169,3 +194,4 @@ class Config:
     # Backend-controlled category/naming rules.
     UPLOAD_TYPE_RULES = _load_upload_type_rules()
     PROCESSING_CATEGORY_CONFIGS = _load_processing_category_configs()
+    MAPPING_STORAGE_RULE_CONFIGS = _load_mapping_storage_rule_configs()

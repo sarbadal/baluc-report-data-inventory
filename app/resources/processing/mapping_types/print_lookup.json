@@ -1,0 +1,8 @@
+{
+  "mapping_type": "print_lookup",
+  "match_patterns": [
+    "^print_dim_mapping_sample\\.csv$",
+    "^print.*mapping.*\\.csv$"
+  ],
+  "output_filename": "mapping_print_lookup.csv"
+}

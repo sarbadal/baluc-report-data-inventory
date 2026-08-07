@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from io import BytesIO
+import re
+from pathlib import Path
 from typing import Any, Callable
 
 import pandas as pd
@@ -50,6 +52,8 @@ class UploadService:
     naming_service: FilenameConventionService
     category_detection_service: CategoryDetectionService
     storage_provider: StorageProvider
+    processing_category_configs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    category_filename_rule_configs: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     upload_base_prefix: str = ""
     upload_processors: list[UploadProcessor] = field(default_factory=list)
 
@@ -91,12 +95,99 @@ class UploadService:
 
         return results
 
-    def _build_destination_path(self, category: str, frame: UploadFrame) -> str:
-        target_filename = self.naming_service.build_filename(category, frame.file_date)
-        relative_path = f"{category}/{year_month_path(frame.file_date)}/{target_filename}"
+    def _build_destination_path(
+        self,
+        *,
+        category: str,
+        frame: UploadFrame,
+        original_filename: str,
+    ) -> str:
+        category_config = self.processing_category_configs.get(category, {})
+        storage_options = category_config.get("storage_options", {}) if isinstance(category_config, dict) else {}
+
+        path_mode = "category_year_month"
+        if isinstance(storage_options, dict):
+            path_mode = str(storage_options.get("path_mode", "category_year_month")).strip().lower()
+
+        target_filename = self._resolve_output_filename(
+            category=category,
+            frame=frame,
+            original_filename=original_filename,
+            storage_options=storage_options,
+        )
+
+        if path_mode == "category_only":
+            relative_path = f"{category}/{target_filename}"
+        else:
+            relative_path = f"{category}/{year_month_path(frame.file_date)}/{target_filename}"
+
         if self.upload_base_prefix:
             return f"{self.upload_base_prefix}/{relative_path}"
         return relative_path
+
+    def _resolve_output_filename(
+        self,
+        *,
+        category: str,
+        frame: UploadFrame,
+        original_filename: str,
+        storage_options: Any,
+    ) -> str:
+        default_name = self.naming_service.build_filename(category, frame.file_date)
+        if not isinstance(storage_options, dict):
+            return default_name
+
+        merged_rules: list[dict[str, Any]] = []
+        inline_rules = storage_options.get("filename_rules", [])
+        if isinstance(inline_rules, list):
+            merged_rules.extend(rule for rule in inline_rules if isinstance(rule, dict))
+
+        external_rules = self.category_filename_rule_configs.get(category, [])
+        if isinstance(external_rules, list):
+            merged_rules.extend(rule for rule in external_rules if isinstance(rule, dict))
+
+        for rule in merged_rules:
+            output_filename = self._normalize_output_filename(rule.get("output_filename"))
+            if output_filename is None:
+                continue
+
+            patterns = rule.get("match_patterns", [])
+            if not isinstance(patterns, list):
+                continue
+            if any(self._safe_pattern_match(pattern, original_filename) for pattern in patterns):
+                return output_filename
+
+        use_original_filename = bool(storage_options.get("use_original_filename", False))
+        if use_original_filename:
+            normalized_original = self._normalize_output_filename(original_filename)
+            if normalized_original is not None:
+                return normalized_original
+
+        default_output_filename = self._normalize_output_filename(storage_options.get("default_output_filename"))
+        if default_output_filename is not None:
+            return default_output_filename
+
+        return default_name
+
+    @staticmethod
+    def _normalize_output_filename(raw_filename: Any) -> str | None:
+        if not isinstance(raw_filename, str):
+            return None
+        candidate = Path(raw_filename).name.strip()
+        if not candidate:
+            return None
+        if not candidate.lower().endswith(".csv"):
+            candidate = f"{candidate}.csv"
+        return candidate
+
+    @staticmethod
+    def _safe_pattern_match(pattern: Any, filename: str) -> bool:
+        if not isinstance(pattern, str) or not pattern.strip():
+            return False
+        try:
+            return re.search(pattern, filename, flags=re.IGNORECASE) is not None
+        except re.error:
+            return False
 
     def _run_upload_processors(self, request: UploadProcessorRequest) -> list[UploadFrame]:
         frames = [UploadFrame(df=request.df, file_date=date.today())]
@@ -302,7 +393,11 @@ class _UploadExecution:
         uploaded_uris: list[str] = []
 
         for idx, frame in enumerate(frames, start=1):
-            destination_path = self.service._build_destination_path(category=self.category, frame=frame)
+            destination_path = self.service._build_destination_path(
+                category=self.category,
+                frame=frame,
+                original_filename=self.filename,
+            )
 
             self._emit_progress(
                 {

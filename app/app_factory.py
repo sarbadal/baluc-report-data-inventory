@@ -41,6 +41,10 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         naming_service=naming_service,
         category_detection_service=category_detection_service,
         storage_provider=storage_provider,
+        processing_category_configs=app.config.get("PROCESSING_CATEGORY_CONFIGS", {}),
+        category_filename_rule_configs={
+            "mapping": app.config.get("MAPPING_STORAGE_RULE_CONFIGS", []),
+        },
         upload_base_prefix=app.config.get("UPLOAD_BASE_PREFIX", ""),
         upload_processors=upload_processors,
     )
