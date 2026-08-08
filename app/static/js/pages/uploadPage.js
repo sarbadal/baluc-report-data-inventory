@@ -105,8 +105,7 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
 
         const statusCell = document.createElement("td");
         if (result.is_active) {
-            const progress = result.progress ? ` (${result.progress})` : "";
-            statusCell.textContent = `${result.status_label || "In Progress"}${progress}`;
+            statusCell.textContent = result.status_label || "In Progress";
         } else {
             statusCell.textContent = result.success ? "Success" : "Failed";
         }
@@ -131,6 +130,11 @@ import { cancelUploadJob, fetchUploadJob, startUploadJob } from "../modules/uplo
             const total = Number(parts[1]);
             if (Number.isFinite(done) && Number.isFinite(total) && total > 0) {
                 percent = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+            }
+        } else if (result.is_active && typeof result.progress === "string" && result.progress.includes("%")) {
+            const normalized = Number(result.progress.replace("%", "").trim());
+            if (Number.isFinite(normalized)) {
+                percent = Math.max(0, Math.min(100, Math.round(normalized)));
             }
         } else if (result.success) {
             percent = 100;

@@ -105,6 +105,10 @@ body {
     font-family: "Helvetica Neue", Helvetica, sans-serif;
     color: var(--text);
     background: var(--body-bg);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 74px;
 }
 
 .global-upload-tracker {
@@ -173,52 +177,102 @@ nav {
     max-width: 900px;
     margin: 2rem auto;
     padding: 0 1rem;
+    width: 100%;
+    flex: 1 0 auto;
 }
 
 .app-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 18;
     border-top: 1px solid var(--border);
     background: var(--footer-bg);
-    margin-top: 2rem;
+    margin-top: 0;
 }
 
 .app-footer-inner {
     max-width: 900px;
     margin: 0 auto;
-    padding: 0.9rem 1rem;
-    display: flex;
-    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.8rem;
     color: var(--footer-text);
-    font-size: 0.86rem;
+    font-size: 0.8rem;
 }
 
-.app-footer-inner p {
+.app-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.app-footer-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999px;
+    background: var(--theme-toggle-bg);
+    border: 1px solid var(--theme-toggle-border);
+    color: var(--theme-toggle-text);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+}
+
+.app-footer-copy {
+    min-width: 0;
+}
+
+.app-footer-copy p {
     margin: 0;
 }
 
-.app-footer-links {
-    display: flex;
-    gap: 0.8rem;
+.app-footer-title {
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
-.app-footer-links a {
+.app-footer-caption {
+    font-size: 0.68rem;
+    color: var(--subtle-text);
+}
+
+.app-footer-nav {
+    display: flex;
+    gap: 0.7rem;
+    justify-self: center;
+    flex-wrap: wrap;
+}
+
+.app-footer-nav a {
     text-decoration: none;
     color: var(--footer-link);
     font-weight: 600;
+    font-size: 0.74rem;
+    letter-spacing: 0.02em;
 }
 
 .theme-mode-badge {
-    padding: 0.28rem 0.56rem;
+    margin: 0;
+    padding: 0.2rem 0.48rem;
     border-radius: 999px;
     border: 1px solid var(--theme-toggle-border);
     background: var(--theme-toggle-bg);
     color: var(--theme-toggle-text);
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    min-width: 6.5rem;
+    min-width: 5.8rem;
     text-align: center;
+    justify-self: end;
 }
 
 .card {
@@ -606,6 +660,53 @@ button.theme-toggle {
     table-layout: fixed;
 }
 
+#upload-results-block .results-table th:nth-child(1),
+#upload-results-block .results-table td:nth-child(1) {
+    width: 12%;
+}
+
+#upload-results-block .results-table th:nth-child(2),
+#upload-results-block .results-table td:nth-child(2) {
+    width: 10%;
+}
+
+#upload-results-block .results-table th:nth-child(3),
+#upload-results-block .results-table td:nth-child(3) {
+    width: 9%;
+}
+
+#upload-results-block .results-table th:nth-child(4),
+#upload-results-block .results-table td:nth-child(4) {
+    width: 10%;
+}
+
+#upload-results-block .results-table th:nth-child(5),
+#upload-results-block .results-table td:nth-child(5) {
+    width: 10%;
+}
+
+#upload-results-block .results-table th:nth-child(6),
+#upload-results-block .results-table td:nth-child(6) {
+    width: 49%;
+}
+
+#upload-results-block .results-table th:nth-child(1) {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+#upload-results-block .results-table th:nth-child(2),
+#upload-results-block .results-table td:nth-child(2),
+#upload-results-block .results-table th:nth-child(3),
+#upload-results-block .results-table td:nth-child(3),
+#upload-results-block .results-table th:nth-child(4),
+#upload-results-block .results-table td:nth-child(4) {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
 .results-table th,
 .results-table td {
     border: 1px solid var(--border);
@@ -792,9 +893,14 @@ body.col-resize-active {
 
 .progress-wrap {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: stretch;
 }
 
 .progress-bar {
+    display: block;
     width: 100%;
     height: 8px;
     background: var(--progress-track);
@@ -810,9 +916,13 @@ body.col-resize-active {
 }
 
 .progress-text {
+    display: block;
     font-size: 0.8rem;
+    line-height: 1.2;
     color: var(--subtle-text);
-    margin-top: 0.2rem;
+    margin-top: 0;
+    white-space: normal;
+    word-break: break-word;
 }
 
 #live-progress {
@@ -880,12 +990,29 @@ body.col-resize-active {
     }
 
     .app-footer-inner {
-        flex-direction: column;
-        align-items: flex-start;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.5rem;
+        padding-top: 0.42rem;
+        padding-bottom: 0.42rem;
+    }
+
+    .app-footer-nav {
+        justify-self: center;
+        gap: 0.5rem;
     }
 
     .theme-mode-badge {
-        align-self: flex-start;
+        justify-self: end;
+        min-width: 5.1rem;
+        font-size: 0.66rem;
+    }
+
+    .app-footer-caption {
+        display: none;
+    }
+
+    body {
+        padding-bottom: 66px;
     }
 
     .recent-uploads-table th,

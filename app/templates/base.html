@@ -137,12 +137,20 @@
 
     <footer class="app-footer">
         <div class="app-footer-inner">
-            <p>BaluC Data Platform</p>
-            <p class="app-footer-links">
+            <div class="app-footer-brand" aria-label="BaluC Data Platform">
+                <span class="app-footer-mark" aria-hidden="true">BC</span>
+                <div class="app-footer-copy">
+                    <p class="app-footer-title">BaluC Data Platform</p>
+                    <p class="app-footer-caption">CSV ingestion and inventory reporting</p>
+                </div>
+            </div>
+
+            <nav class="app-footer-nav" aria-label="Footer links">
                 <a href="{{ url_for('home.index') }}">Home</a>
                 <a href="{{ url_for('upload.upload_csv') }}">Upload</a>
                 <a href="{{ url_for('inventory.show_inventory') }}">Inventory</a>
-            </p>
+            </nav>
+
             <p id="theme-mode-badge" class="theme-mode-badge">Mode: Auto</p>
         </div>
     </footer>
