@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 import shutil
 import subprocess
@@ -322,6 +323,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--static-asset-version",
+        help=(
+            "Static asset cache-busting token. If omitted, uses DEPLOY_STATIC_ASSET_VERSION/"
+            "STATIC_ASSET_VERSION from env file, else auto-generates UTC timestamp."
+        ),
+    )
+    parser.add_argument(
         "--source-dir",
         help="Source directory passed to gcloud functions deploy",
     )
@@ -447,6 +455,15 @@ def main() -> int:
                 f"https://storage.googleapis.com/{static_bucket_name}/{static_gcs_prefix}"
             )
 
+        static_asset_version = resolve_deployment_value(
+            args.static_asset_version,
+            deployment_env,
+            ["DEPLOY_STATIC_ASSET_VERSION", "STATIC_ASSET_VERSION"],
+            default="",
+        ).strip()
+        if not static_asset_version:
+            static_asset_version = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
         allow_unauthenticated = bool(args.allow_unauthenticated) or _as_bool(
             deployment_env.get("DEPLOY_ALLOW_UNAUTHENTICATED", ""),
             default=False,
@@ -485,6 +502,7 @@ def main() -> int:
         env_vars["STATIC_BUCKET"] = static_bucket_name
         env_vars["STATIC_GCS_PREFIX"] = static_gcs_prefix
         env_vars["STATIC_ASSET_BASE_URL"] = static_asset_base_url
+        env_vars["STATIC_ASSET_VERSION"] = static_asset_version
 
         if args.dry_run_summary:
             summary_rows: list[tuple[str, str]] = [
@@ -497,6 +515,7 @@ def main() -> int:
                 ("static_bucket_name", static_bucket_name),
                 ("static_gcs_prefix", static_gcs_prefix),
                 ("static_asset_base_url", static_asset_base_url),
+                ("static_asset_version", static_asset_version),
                 ("bucket_location", bucket_location),
                 ("effective_env_type", effective_env_type),
                 ("static_dir", str(static_dir)),
@@ -516,6 +535,7 @@ def main() -> int:
         print(f"Static bucket: gs://{static_bucket_name}")
         print(f"Static prefix: {static_gcs_prefix}")
         print(f"Static base URL: {static_asset_base_url}")
+        print(f"Static asset version: {static_asset_version}")
         print(f"Env file: {env_file}")
         print(f"Dry run: {'yes' if args.dry_run else 'no'}")
 

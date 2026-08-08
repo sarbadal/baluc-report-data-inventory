@@ -423,6 +423,97 @@ nav {
     flex-wrap: wrap;
 }
 
+.recent-uploads-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.recent-uploads-title-wrap h3 {
+    margin: 0;
+}
+
+.recent-uploads-subtitle {
+    margin: 0.25rem 0 0;
+    max-width: 62ch;
+}
+
+.recent-clear-form {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.recent-clear-button {
+    align-self: center;
+    background: transparent;
+    color: var(--subtle-text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.36rem 0.72rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.recent-clear-button:hover {
+    background: var(--table-th-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.recent-clear-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.recent-clear-help {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--subtle-text);
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: help;
+    user-select: none;
+}
+
+.recent-clear-tooltip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.45rem);
+    width: min(320px, 80vw);
+    padding: 0.45rem 0.55rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    z-index: 20;
+}
+
+.recent-clear-help:hover .recent-clear-tooltip,
+.recent-clear-help:focus-visible .recent-clear-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 input,
 select,
 button {
@@ -767,6 +858,25 @@ body.col-resize-active {
 
     .home-status-grid {
         grid-template-columns: 1fr;
+    }
+
+    .recent-uploads-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .recent-clear-button {
+        width: 100%;
+    }
+
+    .recent-clear-help {
+        align-self: flex-start;
+    }
+
+    .recent-clear-tooltip {
+        right: auto;
+        left: 0;
+        width: min(300px, calc(100vw - 2.5rem));
     }
 
     .app-footer-inner {

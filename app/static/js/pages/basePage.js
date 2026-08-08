@@ -57,6 +57,10 @@ import { cancelUploadJob, fetchUploadJob } from "../modules/uploadJobsApi.js";
 })();
 
 (function initThemeToggle() {
+    if (window.__balucThemeToggleBound) {
+        return;
+    }
+
     const toggle = document.getElementById("theme-toggle");
     const modeBadge = document.getElementById("theme-mode-badge");
     if (!toggle) {
@@ -120,6 +124,8 @@ import { cancelUploadJob, fetchUploadJob } from "../modules/uploadJobsApi.js";
             }
         });
     }
+
+    window.__balucThemeToggleBound = true;
 })();
 
 (function initGlobalUploadTracker() {

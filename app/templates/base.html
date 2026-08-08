@@ -21,6 +21,83 @@
             document.documentElement.setAttribute("data-theme-mode", mode);
             document.documentElement.setAttribute("data-theme", theme);
         })();
+
+        (function bindThemeToggle() {
+            const MODE_KEY = "baluc-theme-mode";
+            const LEGACY_THEME_KEY = "baluc-theme";
+            const modes = ["auto", "light", "dark"];
+
+            const resolveTheme = function (mode, mediaQuery) {
+                if (mode === "auto") {
+                    return mediaQuery && mediaQuery.matches ? "dark" : "light";
+                }
+                return mode;
+            };
+
+            const updateLabel = function (mode, toggle, modeBadge) {
+                const prettyMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+                if (toggle) {
+                    toggle.textContent = `Theme: ${prettyMode}`;
+                    toggle.setAttribute("aria-label", `Change theme mode. Current mode is ${prettyMode}.`);
+                }
+                if (modeBadge) {
+                    modeBadge.textContent = `Mode: ${prettyMode}`;
+                    modeBadge.setAttribute("data-mode", mode);
+                }
+            };
+
+            const applyMode = function (mode, persist, root, toggle, modeBadge, mediaQuery) {
+                const theme = resolveTheme(mode, mediaQuery);
+                root.setAttribute("data-theme-mode", mode);
+                root.setAttribute("data-theme", theme);
+                updateLabel(mode, toggle, modeBadge);
+
+                if (persist) {
+                    localStorage.setItem(MODE_KEY, mode);
+                    if (mode === "light" || mode === "dark") {
+                        localStorage.setItem(LEGACY_THEME_KEY, mode);
+                    } else {
+                        localStorage.removeItem(LEGACY_THEME_KEY);
+                    }
+                }
+            };
+
+            document.addEventListener("DOMContentLoaded", function () {
+                if (window.__balucThemeToggleBound) {
+                    return;
+                }
+
+                const toggle = document.getElementById("theme-toggle");
+                if (!toggle) {
+                    return;
+                }
+
+                const modeBadge = document.getElementById("theme-mode-badge");
+                const root = document.documentElement;
+                const mediaQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+                const currentMode = root.getAttribute("data-theme-mode") || "auto";
+                applyMode(currentMode, false, root, toggle, modeBadge, mediaQuery);
+
+                toggle.addEventListener("click", function () {
+                    const mode = root.getAttribute("data-theme-mode") || "auto";
+                    const index = modes.indexOf(mode);
+                    const nextMode = modes[(index + 1) % modes.length];
+                    applyMode(nextMode, true, root, toggle, modeBadge, mediaQuery);
+                });
+
+                if (mediaQuery && typeof mediaQuery.addEventListener === "function") {
+                    mediaQuery.addEventListener("change", function () {
+                        const mode = root.getAttribute("data-theme-mode") || "auto";
+                        if (mode === "auto") {
+                            applyMode("auto", false, root, toggle, modeBadge, mediaQuery);
+                        }
+                    });
+                }
+
+                window.__balucThemeToggleBound = true;
+            });
+        })();
     </script>
     <link rel="icon" type="image/svg+xml" href="{{ static_url_for('favicon.svg') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url_for('favicon.ico') }}">

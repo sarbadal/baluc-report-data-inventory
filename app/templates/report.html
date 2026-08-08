@@ -82,7 +82,18 @@
 </section>
 
 <section class="card">
-    <h3>Recent Uploads</h3>
+    <div class="recent-uploads-header">
+        <div class="recent-uploads-title-wrap">
+            <h3>Recent Uploads</h3>
+        </div>
+        <form class="recent-clear-form" method="post" action="{{ url_for('inventory.clear_recent_uploads') }}" onsubmit="return confirm('Clear the Recent Uploads list? This will not delete uploaded files.');">
+            <span class="recent-clear-help" tabindex="0" aria-label="Clear list help">
+                i
+                <span class="recent-clear-tooltip" role="tooltip">Clear only hides the current recent list view. Uploaded files remain safe in storage.</span>
+            </span>
+            <button type="submit" class="recent-clear-button" title="Clear current Recent Uploads list">Clear List</button>
+        </form>
+    </div>
     {% if storage_summary.recent_files %}
     <table id="recent-uploads-table" class="results-table recent-uploads-table">
         <colgroup>

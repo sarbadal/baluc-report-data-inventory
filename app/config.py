@@ -191,6 +191,7 @@ class Config:
     STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "").strip()
     STATIC_ASSET_BASE_URL = os.getenv("STATIC_ASSET_BASE_URL", "").strip().rstrip("/")
+    STATIC_ASSET_VERSION = os.getenv("STATIC_ASSET_VERSION", "").strip()
     STATIC_GCS_PREFIX = os.getenv("STATIC_GCS_PREFIX", "static").strip("/")
     UPLOAD_BASE_PREFIX = os.getenv("UPLOAD_BASE_PREFIX", "").strip("/")
     UPLOAD_PROCESSOR_CLASSES = _parse_csv_env_list(

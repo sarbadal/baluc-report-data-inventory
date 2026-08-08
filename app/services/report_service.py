@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+import json
+from io import BytesIO
 import re
 from zoneinfo import ZoneInfo
 from app.services.storage import StorageProvider
@@ -56,6 +58,9 @@ class _CategoryStats:
 
 
 class ReportService:
+    _INVENTORY_STATE_PATH = "_inventory_state/recent_uploads_cleared_at.json"
+    _INTERNAL_PREFIXES = ("_upload_jobs/", "_upload_chunks/", "_inventory_state/")
+
     def __init__(self, storage_provider: StorageProvider) -> None:
         self.storage_provider = storage_provider
 
@@ -64,6 +69,7 @@ class ReportService:
 
     def get_storage_inventory_summary(self) -> StorageInventorySummary:
         generated_at = self._format_dt(datetime.now(IST))
+        recent_clear_cursor = self._load_recent_clear_cursor()
         try:
             objects = self.storage_provider.list_file_objects(prefix="")
         except Exception as exc:
@@ -82,6 +88,8 @@ class ReportService:
 
         for obj in objects:
             if not obj.path or obj.path.endswith("/"):
+                continue
+            if self._is_internal_path(obj.path):
                 continue
 
             category = obj.path.split("/", 1)[0] or "uncategorized"
@@ -121,6 +129,13 @@ class ReportService:
         categories = self._build_category_summaries(category_stats)
         categories.sort(key=lambda row: (-row.total_files, row.category.lower()))
 
+        if recent_clear_cursor is not None:
+            recent_rows = [
+                row
+                for row in recent_rows
+                if row[0] > recent_clear_cursor
+            ]
+
         recent_rows.sort(key=lambda item: item[0], reverse=True)
         recent_files = [row for _, row in recent_rows[:15]]
 
@@ -133,6 +148,17 @@ class ReportService:
             last_uploaded_at=self._format_dt(latest_uploaded),
             categories=categories,
             recent_files=recent_files,
+        )
+
+    def clear_recent_uploads(self) -> None:
+        now = datetime.now(timezone.utc)
+        payload = {
+            "cleared_at": now.isoformat(),
+        }
+        self.storage_provider.upload(
+            stream=BytesIO(json.dumps(payload, ensure_ascii=True, indent=2).encode("utf-8")),
+            destination_path=self._INVENTORY_STATE_PATH,
+            content_type="application/json",
         )
 
     def _build_empty_summary(self, generated_at: str, error: str | None = None) -> StorageInventorySummary:
@@ -151,6 +177,31 @@ class ReportService:
     @staticmethod
     def _resolve_uploaded_at(value: datetime | None) -> datetime:
         return value or datetime.min.replace(tzinfo=timezone.utc)
+
+    def _load_recent_clear_cursor(self) -> datetime | None:
+        try:
+            raw = self.storage_provider.download(self._INVENTORY_STATE_PATH)
+            payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+            return None
+
+        if not isinstance(payload, dict):
+            return None
+        cleared_at = payload.get("cleared_at")
+        if not isinstance(cleared_at, str) or not cleared_at.strip():
+            return None
+        try:
+            parsed = datetime.fromisoformat(cleared_at)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+
+    @classmethod
+    def _is_internal_path(cls, path: str) -> bool:
+        normalized = str(path).strip()
+        return any(normalized.startswith(prefix) for prefix in cls._INTERNAL_PREFIXES)
 
     def _build_file_summary(self, path: str, category: str, size_bytes: int, uploaded_at: datetime) -> StorageFileSummary:
         return StorageFileSummary(

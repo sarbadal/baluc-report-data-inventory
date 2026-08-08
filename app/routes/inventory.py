@@ -41,6 +41,19 @@ def download_recent_file():
     )
 
 
+@inventory_bp.route("/recent/clear", methods=["POST"])
+def clear_recent_uploads():
+    report_service: ReportService = current_app.extensions["report_service"]
+    try:
+        report_service.clear_recent_uploads()
+    except Exception as exc:
+        flash(f"Unable to clear recent uploads: {exc}", "error")
+        return redirect(url_for("inventory.show_inventory"))
+
+    flash("Recent uploads list cleared. New uploads will appear automatically.", "success")
+    return redirect(url_for("inventory.show_inventory"))
+
+
 def _is_safe_storage_path(storage_path: str) -> bool:
     # Prevent absolute paths and traversal attempts when local storage backend is active.
     if not storage_path:

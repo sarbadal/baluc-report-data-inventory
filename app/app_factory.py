@@ -70,9 +70,13 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     def inject_static_url_for():
         def static_url_for(filename: str) -> str:
             base = str(app.config.get("STATIC_ASSET_BASE_URL", "")).strip().rstrip("/")
+            version = str(app.config.get("STATIC_ASSET_VERSION", "")).strip()
             if base:
-                return f"{base}/{filename.lstrip('/')}"
-            return url_for("static", filename=filename)
+                resolved_url = f"{base}/{filename.lstrip('/')}"
+            else:
+                resolved_url = url_for("static", filename=filename)
+
+            return _append_query_param(resolved_url, "v", version) if version else resolved_url
 
         return {"static_url_for": static_url_for}
 
@@ -110,3 +114,8 @@ def _resolve_static_asset_base_url(config: Config) -> str:
     if static_prefix:
         return f"https://storage.googleapis.com/{bucket_name}/{static_prefix}"
     return f"https://storage.googleapis.com/{bucket_name}"
+
+
+def _append_query_param(url: str, key: str, value: str) -> str:
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{key}={value}"
