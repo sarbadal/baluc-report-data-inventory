@@ -42,6 +42,15 @@ def _parse_csv_env_list(raw_value: str, default: list[str]) -> list[str]:
     return parsed or default
 
 
+def _normalize_app_env(raw_value: str) -> str:
+    value = str(raw_value or "").strip().lower()
+    if value in {"prod", "production"}:
+        return "prod"
+    if value in {"dev", "development"}:
+        return "dev"
+    return "dev"
+
+
 def _default_upload_type_rules() -> dict[str, dict]:
     return {
         "contact": {
@@ -175,7 +184,7 @@ def validate_processing_category_configs(upload_type_rules: dict[str, dict], pro
 
 
 class Config:
-    APP_ENV = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower()
+    APP_ENV = _normalize_app_env(os.getenv("APP_ENV", os.getenv("FLASK_ENV", "dev")))
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
     MAX_CONTENT_LENGTH = _resolve_max_content_length()
 

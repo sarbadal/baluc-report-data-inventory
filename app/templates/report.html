@@ -40,7 +40,9 @@
                 <th>Category</th>
                 <th>File Count</th>
                 <th>Total Size</th>
-                <th>Last Uploaded</th>
+                <th>Min Date</th>
+                <th>Max Date</th>
+                <th>Missing Dates</th>
             </tr>
         </thead>
         <tbody>
@@ -49,7 +51,27 @@
                 <td>{{ category.category }}</td>
                 <td>{{ category.total_files }}</td>
                 <td>{{ category.total_size_label }}</td>
-                <td>{{ category.last_uploaded_at }}</td>
+                <td>{{ category.min_file_date }}</td>
+                <td>{{ category.max_file_date }}</td>
+                <td>
+                    {% if category.missing_file_dates_count == 0 %}
+                        -
+                    {% else %}
+                        <details class="expandable-path">
+                            <summary title="Click to expand missing dates">
+                                {{ category.missing_file_dates_count }} missing
+                            </summary>
+                            <div class="path-full" title="Missing dates">
+                                {% for missing_date in category.missing_file_dates[:12] %}
+                                    <div>{{ missing_date }}</div>
+                                {% endfor %}
+                                {% if category.missing_file_dates_count > 12 %}
+                                    <div>+{{ category.missing_file_dates_count - 12 }} more</div>
+                                {% endif %}
+                            </div>
+                        </details>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

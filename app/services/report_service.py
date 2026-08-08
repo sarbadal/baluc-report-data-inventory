@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
+import re
 from zoneinfo import ZoneInfo
 from app.services.storage import StorageProvider
 
@@ -24,6 +25,10 @@ class StorageCategorySummary:
     total_files: int
     total_size_bytes: int
     total_size_label: str
+    min_file_date: str
+    max_file_date: str
+    missing_file_dates_count: int
+    missing_file_dates: list[str]
     last_uploaded_at: str
 
 
@@ -44,7 +49,10 @@ class StorageInventorySummary:
 class _CategoryStats:
     count: int = 0
     size: int = 0
-    latest: datetime | None = None
+    earliest_file_date: date | None = None
+    latest_file_date: date | None = None
+    file_dates: set[date] = field(default_factory=set)
+    latest_uploaded_at: datetime | None = None
 
 
 class ReportService:
@@ -79,12 +87,19 @@ class ReportService:
             category = obj.path.split("/", 1)[0] or "uncategorized"
             file_size = int(obj.size_bytes or 0)
             uploaded_at = self._resolve_uploaded_at(obj.updated_at)
+            file_date = self._resolve_file_date(obj.path)
 
             stats = category_stats.setdefault(category, _CategoryStats())
             stats.count += 1
             stats.size += file_size
-            if stats.latest is None or uploaded_at > stats.latest:
-                stats.latest = uploaded_at
+            if file_date is not None:
+                stats.file_dates.add(file_date)
+                if stats.earliest_file_date is None or file_date < stats.earliest_file_date:
+                    stats.earliest_file_date = file_date
+                if stats.latest_file_date is None or file_date > stats.latest_file_date:
+                    stats.latest_file_date = file_date
+            if stats.latest_uploaded_at is None or uploaded_at > stats.latest_uploaded_at:
+                stats.latest_uploaded_at = uploaded_at
 
             if latest_uploaded is None or uploaded_at > latest_uploaded:
                 latest_uploaded = uploaded_at
@@ -147,16 +162,69 @@ class ReportService:
         )
 
     def _build_category_summaries(self, category_stats: dict[str, _CategoryStats]) -> list[StorageCategorySummary]:
-        return [
-            StorageCategorySummary(
-                category=name,
-                total_files=stats.count,
-                total_size_bytes=stats.size,
-                total_size_label=self._humanize_size(stats.size),
-                last_uploaded_at=self._format_dt(stats.latest),
+        summaries: list[StorageCategorySummary] = []
+        for name, stats in category_stats.items():
+            missing_dates = self._missing_dates_between(
+                start=stats.earliest_file_date,
+                end=stats.latest_file_date,
+                present_dates=stats.file_dates,
             )
-            for name, stats in category_stats.items()
-        ]
+            summaries.append(
+                StorageCategorySummary(
+                    category=name,
+                    total_files=stats.count,
+                    total_size_bytes=stats.size,
+                    total_size_label=self._humanize_size(stats.size),
+                    min_file_date=self._format_file_date(stats.earliest_file_date),
+                    max_file_date=self._format_file_date(stats.latest_file_date),
+                    missing_file_dates_count=len(missing_dates),
+                    missing_file_dates=[item.strftime("%Y-%m-%d") for item in missing_dates],
+                    last_uploaded_at=self._format_dt(stats.latest_uploaded_at),
+                )
+            )
+        return summaries
+
+    @staticmethod
+    def _missing_dates_between(start: date | None, end: date | None, present_dates: set[date]) -> list[date]:
+        if start is None or end is None or start >= end:
+            return []
+
+        missing: list[date] = []
+        # Include leading missing dates from the 1st day of the min-date month.
+        current = start.replace(day=1)
+        while current <= end:
+            if current not in present_dates:
+                missing.append(current)
+            current = current.fromordinal(current.toordinal() + 1)
+
+        return missing
+
+    @staticmethod
+    def _resolve_file_date(path: str) -> date | None:
+        filename = path.rsplit("/", 1)[-1]
+        candidates = [filename, path]
+
+        iso_pattern = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
+        compact_pattern = re.compile(r"(?<!\d)(\d{8})(?!\d)")
+
+        for candidate in candidates:
+            match = iso_pattern.search(candidate)
+            if match:
+                year, month, day = match.groups()
+                try:
+                    return date(int(year), int(month), int(day))
+                except ValueError:
+                    pass
+
+            match = compact_pattern.search(candidate)
+            if match:
+                value = match.group(1)
+                try:
+                    return datetime.strptime(value, "%Y%m%d").date()
+                except ValueError:
+                    pass
+
+        return None
 
     @staticmethod
     def _humanize_size(size_bytes: int) -> str:
@@ -175,3 +243,10 @@ class ReportService:
         if value.tzinfo is None:
             value = value.replace(tzinfo=timezone.utc)
         return value.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def _format_file_date(value: date | None) -> str:
+        if value is None:
+            return "-"
+        return value.strftime("%Y-%m-%d")
+

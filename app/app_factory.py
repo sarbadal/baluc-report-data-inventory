@@ -98,8 +98,8 @@ def _resolve_static_asset_base_url(config: Config) -> str:
     if explicit_base_url:
         return explicit_base_url
 
-    app_env = str(config.get("APP_ENV", "development")).strip().lower()
-    if app_env != "production":
+    app_env = str(config.get("APP_ENV", "dev")).strip().lower()
+    if app_env != "prod":
         return ""
 
     bucket_name = str(config.get("GCS_BUCKET_NAME", "")).strip()
