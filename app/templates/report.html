@@ -256,3 +256,85 @@
 </section>
 
 {% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    (function initInventoryTreeTogglesFallback() {
+        if (window.__balucInventoryToggleBound) {
+            return;
+        }
+
+        var treeRoot = document.querySelector('.inventory-tree-wrap');
+        var expandButton = document.getElementById('inventory-expand-all');
+        var collapseButton = document.getElementById('inventory-collapse-all');
+        if (!treeRoot || !expandButton || !collapseButton) {
+            return;
+        }
+
+        var getFolders = function () {
+            return Array.prototype.slice.call(treeRoot.querySelectorAll('details.inventory-tree-folder'));
+        };
+
+        var syncFolderToggleLabel = function (folder) {
+            var toggleButton = folder.querySelector('.inventory-folder-toggle');
+            if (!toggleButton) {
+                return;
+            }
+
+            if (folder.open) {
+                toggleButton.setAttribute('title', 'Collapse folder');
+                toggleButton.setAttribute('aria-label', 'Collapse folder');
+                toggleButton.setAttribute('aria-expanded', 'true');
+            } else {
+                toggleButton.setAttribute('title', 'Expand folder');
+                toggleButton.setAttribute('aria-label', 'Expand folder');
+                toggleButton.setAttribute('aria-expanded', 'false');
+            }
+        };
+
+        getFolders().forEach(function (folder) {
+            var toggleButton = folder.querySelector('.inventory-folder-toggle');
+            if (!toggleButton) {
+                return;
+            }
+
+            syncFolderToggleLabel(folder);
+
+            toggleButton.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+            });
+
+            toggleButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var nextOpen = !folder.open;
+                requestAnimationFrame(function () {
+                    folder.open = nextOpen;
+                    syncFolderToggleLabel(folder);
+                });
+            });
+
+            folder.addEventListener('toggle', function () {
+                syncFolderToggleLabel(folder);
+            });
+        });
+
+        expandButton.addEventListener('click', function () {
+            getFolders().forEach(function (folder) {
+                folder.open = true;
+                syncFolderToggleLabel(folder);
+            });
+        });
+
+        collapseButton.addEventListener('click', function () {
+            getFolders().forEach(function (folder) {
+                folder.open = false;
+                syncFolderToggleLabel(folder);
+            });
+        });
+
+        window.__balucInventoryToggleBound = true;
+    })();
+</script>
+{% endblock %}
