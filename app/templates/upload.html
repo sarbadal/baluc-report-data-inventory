@@ -129,5 +129,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script type="module" src="{{ static_url_for('js/pages/uploadPage.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/pages/uploadPage.js') }}"></script>
 {% endblock %}
