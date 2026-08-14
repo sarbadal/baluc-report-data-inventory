@@ -22,6 +22,16 @@ class StorageFileSummary:
 
 
 @dataclass
+class StorageFolderSummary:
+    name: str
+    path: str
+    total_files: int
+    last_uploaded_at: str
+    folders: list["StorageFolderSummary"]
+    files: list[StorageFileSummary]
+
+
+@dataclass
 class StorageCategorySummary:
     category: str
     total_files: int
@@ -44,6 +54,8 @@ class StorageInventorySummary:
     last_uploaded_at: str
     categories: list[StorageCategorySummary]
     recent_files: list[StorageFileSummary]
+    root_files: list[StorageFileSummary]
+    folder_tree: list[StorageFolderSummary]
     error: str | None = None
 
 
@@ -54,6 +66,15 @@ class _CategoryStats:
     earliest_file_date: date | None = None
     latest_file_date: date | None = None
     file_dates: set[date] = field(default_factory=set)
+    latest_uploaded_at: datetime | None = None
+
+
+@dataclass
+class _FolderNodeBuilder:
+    name: str
+    path: str
+    folders: dict[str, "_FolderNodeBuilder"] = field(default_factory=dict)
+    files: list[StorageFileSummary] = field(default_factory=list)
     latest_uploaded_at: datetime | None = None
 
 
@@ -83,6 +104,7 @@ class ReportService:
 
         category_stats: dict[str, _CategoryStats] = {}
         recent_rows: list[tuple[datetime, StorageFileSummary]] = []
+        all_rows: list[tuple[datetime, StorageFileSummary]] = []
         total_size = 0
         latest_uploaded: datetime | None = None
 
@@ -114,17 +136,14 @@ class ReportService:
 
             total_size += file_size
 
-            recent_rows.append(
-                (
-                    uploaded_at,
-                    self._build_file_summary(
-                        path=obj.path,
-                        category=category,
-                        size_bytes=file_size,
-                        uploaded_at=uploaded_at,
-                    ),
-                )
+            file_summary = self._build_file_summary(
+                path=obj.path,
+                category=category,
+                size_bytes=file_size,
+                uploaded_at=uploaded_at,
             )
+            recent_rows.append((uploaded_at, file_summary))
+            all_rows.append((uploaded_at, file_summary))
 
         categories = self._build_category_summaries(category_stats)
         categories.sort(key=lambda row: (-row.total_files, row.category.lower()))
@@ -138,6 +157,8 @@ class ReportService:
 
         recent_rows.sort(key=lambda item: item[0], reverse=True)
         recent_files = [row for _, row in recent_rows[:15]]
+        all_rows.sort(key=lambda item: item[0], reverse=True)
+        root_files, folder_tree = self._build_folder_tree(all_rows)
 
         return StorageInventorySummary(
             generated_at=generated_at,
@@ -148,6 +169,8 @@ class ReportService:
             last_uploaded_at=self._format_dt(latest_uploaded),
             categories=categories,
             recent_files=recent_files,
+            root_files=root_files,
+            folder_tree=folder_tree,
         )
 
     def clear_recent_uploads(self) -> None:
@@ -171,8 +194,55 @@ class ReportService:
             last_uploaded_at="-",
             categories=[],
             recent_files=[],
+            root_files=[],
+            folder_tree=[],
             error=error,
         )
+
+    def _build_folder_tree(
+        self,
+        rows: list[tuple[datetime, StorageFileSummary]],
+    ) -> tuple[list[StorageFileSummary], list[StorageFolderSummary]]:
+        root = _FolderNodeBuilder(name="", path="")
+
+        for uploaded_at, file_summary in rows:
+            if root.latest_uploaded_at is None or uploaded_at > root.latest_uploaded_at:
+                root.latest_uploaded_at = uploaded_at
+
+            parts = [part for part in file_summary.path.split("/") if part]
+            if len(parts) <= 1:
+                root.files.append(file_summary)
+                continue
+
+            node = root
+            for index, folder_name in enumerate(parts[:-1]):
+                folder_path = "/".join(parts[: index + 1])
+                child = node.folders.get(folder_name)
+                if child is None:
+                    child = _FolderNodeBuilder(name=folder_name, path=folder_path)
+                    node.folders[folder_name] = child
+                if child.latest_uploaded_at is None or uploaded_at > child.latest_uploaded_at:
+                    child.latest_uploaded_at = uploaded_at
+                node = child
+
+            node.files.append(file_summary)
+
+        def materialize(node: _FolderNodeBuilder) -> StorageFolderSummary:
+            folders = [materialize(child) for _, child in sorted(node.folders.items(), key=lambda item: item[0].lower())]
+            files = sorted(node.files, key=lambda item: item.path.lower())
+            total_files = len(files) + sum(folder.total_files for folder in folders)
+            return StorageFolderSummary(
+                name=node.name,
+                path=node.path,
+                total_files=total_files,
+                last_uploaded_at=self._format_dt(node.latest_uploaded_at),
+                folders=folders,
+                files=files,
+            )
+
+        root_files = sorted(root.files, key=lambda item: item.path.lower())
+        folder_tree = [materialize(child) for _, child in sorted(root.folders.items(), key=lambda item: item[0].lower())]
+        return root_files, folder_tree
 
     @staticmethod
     def _resolve_uploaded_at(value: datetime | None) -> datetime:

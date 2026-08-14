@@ -58,14 +58,14 @@ def _default_upload_type_rules() -> dict[str, dict]:
                 r"^contact_dump_\\d{8}\\.csv$",
                 r"^contact_dump.*\\.csv$",
             ],
-            "output_stem": "contact_dump",
+            "output_stem": "contact_fact",
         },
         "ev": {
             "match_patterns": [
                 r"^ev_dump_\\d{8}\\.csv$",
                 r"^ev_dump.*\\.csv$",
             ],
-            "output_stem": "ev_dump",
+            "output_stem": "ev_fact",
         },
     }
 
@@ -131,12 +131,38 @@ def _load_mapping_storage_rule_configs() -> list[dict]:
     return rules
 
 
-def validate_processing_category_configs(upload_type_rules: dict[str, dict], processing_category_configs: dict[str, dict]) -> None:
+def _load_mapping_file_configs() -> dict[str, dict]:
+    default_dir = Path(__file__).resolve().parent / "resources" / "processing" / "mapping"
+    config_dir = Path(os.getenv("MAPPING_CONFIG_DIR", str(default_dir)))
+    configs: dict[str, dict] = {}
+
+    if not config_dir.exists() or not config_dir.is_dir():
+        return configs
+
+    for item in sorted(config_dir.glob("*.json")):
+        try:
+            parsed = json.loads(item.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict):
+            parsed.setdefault("_config_file", item.name)
+            configs[item.stem] = parsed
+
+    return configs
+
+
+def validate_processing_category_configs(
+    upload_type_rules: dict[str, dict],
+    processing_category_configs: dict[str, dict],
+    mapping_file_configs: dict[str, dict] | None = None,
+) -> None:
+    mapping_file_configs = mapping_file_configs or {}
     enabled_categories = list(upload_type_rules.keys())
     missing_categories = [
         category
         for category in enabled_categories
         if category not in processing_category_configs
+        and not (category == "mapping" and bool(mapping_file_configs))
     ]
     if missing_categories:
         missing = ", ".join(sorted(missing_categories))
@@ -148,6 +174,8 @@ def validate_processing_category_configs(upload_type_rules: dict[str, dict], pro
     errors: list[str] = []
     for category in enabled_categories:
         config = processing_category_configs.get(category)
+        if category == "mapping" and config is None and mapping_file_configs:
+            continue
         if not isinstance(config, dict):
             errors.append(f"{category}: config must be a JSON object")
             continue
@@ -198,6 +226,10 @@ class Config:
         os.getenv("UPLOAD_PROCESSOR_CLASSES", "split_daily"),
         ["split_daily"],
     )
+    FACT_FIELD_MAPPING_KEY_FILTER_CATEGORIES = _parse_csv_env_list(
+        os.getenv("FACT_FIELD_MAPPING_KEY_FILTER_CATEGORIES", "contact,ev,print"),
+        ["contact", "ev", "print"],
+    )
 
     LOCAL_STORAGE_ROOT = Path(os.getenv("LOCAL_STORAGE_ROOT", "storage"))
 
@@ -205,3 +237,4 @@ class Config:
     UPLOAD_TYPE_RULES = _load_upload_type_rules()
     PROCESSING_CATEGORY_CONFIGS = _load_processing_category_configs()
     MAPPING_STORAGE_RULE_CONFIGS = _load_mapping_storage_rule_configs()
+    MAPPING_FILE_CONFIGS = _load_mapping_file_configs()

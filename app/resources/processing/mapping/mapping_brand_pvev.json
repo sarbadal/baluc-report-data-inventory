@@ -1,0 +1,24 @@
+{
+    "_comment_field_mapping": "Mapping direction is target_field -> source_csv_column",
+    "_comment_file_type": "mapping",
+    "gcs_path": "gs://inventory-baluc/mapping/brand-pvev.csv",
+    "field_mapping": {
+        "brand": "Brand",
+        "pvev": "PVorEV"
+    },
+    "content_hints": {
+        "sample_size": 10,
+        "column_value_patterns": [
+            {
+                "column": "Brand",
+                "pattern": "^.+$",
+                "weight": 1
+            },
+            {
+                "column": "PVorEV",
+                "pattern": "^.+$",
+                "weight": 1
+            }
+        ]
+    }
+}

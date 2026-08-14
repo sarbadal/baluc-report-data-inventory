@@ -4,7 +4,7 @@
       "^contact_dump_\\d{8}\\.csv$",
       "^contact_dump.*\\.csv$"
     ],
-    "output_stem": "contact_dump",
+    "output_stem": "contact_fact",
     "default_file_type": "fact"
   },
   "ev": {
@@ -12,7 +12,7 @@
       "^ev_dump_\\d{8}\\.csv$",
       "^ev_dump.*\\.csv$"
     ],
-    "output_stem": "ev_dump",
+    "output_stem": "ev_fact",
     "default_file_type": "fact"
   },
   "print": {
@@ -21,7 +21,7 @@
       "^tml_pring_dump.*\\.csv$",
       "^print_dump.*\\.csv$"
     ],
-    "output_stem": "print_dump",
+    "output_stem": "print_fact",
     "default_file_type": "fact"
   },
   "mapping": {

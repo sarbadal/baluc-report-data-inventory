@@ -22,6 +22,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     validate_processing_category_configs(
         upload_type_rules=app.config.get("UPLOAD_TYPE_RULES", {}),
         processing_category_configs=app.config.get("PROCESSING_CATEGORY_CONFIGS", {}),
+        mapping_file_configs=app.config.get("MAPPING_FILE_CONFIGS", {}),
     )
 
     if not app.config.get("SECRET_KEY"):
@@ -45,6 +46,8 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         category_filename_rule_configs={
             "mapping": app.config.get("MAPPING_STORAGE_RULE_CONFIGS", []),
         },
+        mapping_file_configs=app.config.get("MAPPING_FILE_CONFIGS", {}),
+        fact_key_filter_categories=set(app.config.get("FACT_FIELD_MAPPING_KEY_FILTER_CATEGORIES", [])),
         upload_base_prefix=app.config.get("UPLOAD_BASE_PREFIX", ""),
         upload_processors=upload_processors,
     )

@@ -56,6 +56,70 @@ import { cancelUploadJob, fetchUploadJob } from "../modules/uploadJobsApi.js";
     });
 })();
 
+(function initInventoryTreeToggles() {
+    const treeRoot = document.querySelector(".inventory-tree-wrap");
+    const expandButton = document.getElementById("inventory-expand-all");
+    const collapseButton = document.getElementById("inventory-collapse-all");
+    if (!treeRoot || !expandButton || !collapseButton) {
+        return;
+    }
+
+    const getFolders = function () {
+        return Array.from(treeRoot.querySelectorAll("details.inventory-tree-folder"));
+    };
+
+    const syncFolderToggleLabel = function (folder) {
+        const toggleButton = folder.querySelector(".inventory-folder-toggle");
+        if (!toggleButton) {
+            return;
+        }
+
+        if (folder.open) {
+            toggleButton.setAttribute("title", "Collapse folder");
+            toggleButton.setAttribute("aria-label", "Collapse folder");
+            toggleButton.setAttribute("aria-expanded", "true");
+        } else {
+            toggleButton.setAttribute("title", "Expand folder");
+            toggleButton.setAttribute("aria-label", "Expand folder");
+            toggleButton.setAttribute("aria-expanded", "false");
+        }
+    };
+
+    getFolders().forEach(function (folder) {
+        const toggleButton = folder.querySelector(".inventory-folder-toggle");
+        if (!toggleButton) {
+            return;
+        }
+
+        syncFolderToggleLabel(folder);
+
+        toggleButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            folder.open = !folder.open;
+            syncFolderToggleLabel(folder);
+        });
+
+        folder.addEventListener("toggle", function () {
+            syncFolderToggleLabel(folder);
+        });
+    });
+
+    expandButton.addEventListener("click", function () {
+        getFolders().forEach(function (folder) {
+            folder.open = true;
+            syncFolderToggleLabel(folder);
+        });
+    });
+
+    collapseButton.addEventListener("click", function () {
+        getFolders().forEach(function (folder) {
+            folder.open = false;
+            syncFolderToggleLabel(folder);
+        });
+    });
+})();
+
 (function initThemeToggle() {
     if (window.__balucThemeToggleBound) {
         return;

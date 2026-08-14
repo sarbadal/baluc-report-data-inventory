@@ -3,6 +3,55 @@
 {% block title %}Inventory - BaluC{% endblock %}
 
 {% block content %}
+{% macro render_folder_tree(node) -%}
+<li class="inventory-tree-folder-node">
+    <details class="inventory-tree-folder" open>
+        <summary>
+            <span class="inventory-tree-folder-head">
+                <span class="inventory-tree-folder-name">{{ node.name }}/</span>
+                <span class="inventory-tree-folder-meta">{{ node.total_files }} files | Updated {{ node.last_uploaded_at }}</span>
+            </span>
+            <button
+                type="button"
+                class="secondary-button inventory-folder-toggle"
+                aria-expanded="true"
+                title="Collapse folder"
+                aria-label="Collapse folder"
+            >
+                <span aria-hidden="true"></span>
+            </button>
+        </summary>
+
+        {% if node.files %}
+        <ul class="inventory-tree-file-list">
+            {% for row in node.files %}
+            <li class="inventory-tree-file-item">
+                <span class="inventory-tree-file-name" title="{{ row.path }}">{{ row.path.rsplit('/', 1)[-1] }}</span>
+                <span class="inventory-tree-file-meta">{{ row.size_label }} | {{ row.uploaded_at }}</span>
+                <a
+                    class="button-link recent-download-link"
+                    href="{{ url_for('inventory.download_recent_file', path=row.path) }}"
+                    title="Download {{ row.path }}"
+                    aria-label="Download {{ row.path }}"
+                >
+                    <span aria-hidden="true">↓</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if node.folders %}
+        <ul class="inventory-tree-children">
+            {% for child in node.folders %}
+                {{ render_folder_tree(child) }}
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </details>
+</li>
+{%- endmacro %}
+
 <section class="card">
     <h2>Storage Inventory</h2>
     <p class="hint">Snapshot generated at {{ storage_summary.generated_at }}</p>
@@ -82,6 +131,54 @@
 </section>
 
 <section class="card">
+    <h3>All Files</h3>
+    <p class="hint">Browse files in folder hierarchy and download from any folder.</p>
+    {% if storage_summary.root_files or storage_summary.folder_tree %}
+    <div class="inventory-tree-controls">
+        <button type="button" class="secondary-button inventory-tree-toggle" id="inventory-expand-all" title="Expand all folders" aria-label="Expand all folders">
+            <span aria-hidden="true">+</span>
+        </button>
+        <button type="button" class="secondary-button inventory-tree-toggle" id="inventory-collapse-all" title="Collapse all folders" aria-label="Collapse all folders">
+            <span aria-hidden="true">−</span>
+        </button>
+    </div>
+    <div class="inventory-tree-wrap">
+        {% if storage_summary.root_files %}
+        <div class="inventory-root-files-block">
+            <p class="inventory-root-files-title">Root Files</p>
+            <ul class="inventory-tree-file-list">
+                {% for row in storage_summary.root_files %}
+                <li class="inventory-tree-file-item">
+                    <span class="inventory-tree-file-name" title="{{ row.path }}">{{ row.path }}</span>
+                    <span class="inventory-tree-file-meta">{{ row.size_label }} | {{ row.uploaded_at }}</span>
+                    <a
+                        class="button-link recent-download-link"
+                        href="{{ url_for('inventory.download_recent_file', path=row.path) }}"
+                        title="Download {{ row.path }}"
+                        aria-label="Download {{ row.path }}"
+                    >
+                        <span aria-hidden="true">↓</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if storage_summary.folder_tree %}
+        <ul class="inventory-tree-root">
+            {% for folder in storage_summary.folder_tree %}
+                {{ render_folder_tree(folder) }}
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="hint">No files available in storage yet.</p>
+    {% endif %}
+</section>
+
+<section class="card">
     <div class="recent-uploads-header">
         <div class="recent-uploads-title-wrap">
             <h3>Recent Uploads</h3>
@@ -146,7 +243,7 @@
                         title="Download {{ row.path }}"
                         aria-label="Download {{ row.path }}"
                     >
-                        Download
+                        <span aria-hidden="true">↓</span>
                     </a>
                 </td>
             </tr>
